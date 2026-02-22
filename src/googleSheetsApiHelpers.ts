@@ -75,12 +75,14 @@ export function normalizeRange(range: string, sheetName?: string): string {
 export async function readRange(
   sheets: Sheets,
   spreadsheetId: string,
-  range: string
+  range: string,
+  valueRenderOption: 'FORMATTED_VALUE' | 'UNFORMATTED_VALUE' | 'FORMULA' = 'FORMATTED_VALUE'
 ): Promise<sheets_v4.Schema$ValueRange> {
   try {
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId,
       range,
+      valueRenderOption,
     });
     return response.data;
   } catch (error: any) {

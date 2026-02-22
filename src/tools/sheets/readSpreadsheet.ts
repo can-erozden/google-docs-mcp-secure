@@ -27,7 +27,12 @@ export function register(server: FastMCP) {
       log.info(`Reading spreadsheet ${args.spreadsheetId}, range: ${args.range}`);
 
       try {
-        const response = await SheetsHelpers.readRange(sheets, args.spreadsheetId, args.range);
+        const response = await SheetsHelpers.readRange(
+          sheets,
+          args.spreadsheetId,
+          args.range,
+          args.valueRenderOption
+        );
         const values = response.values || [];
         return JSON.stringify({ range: args.range, values }, null, 2);
       } catch (error: any) {
