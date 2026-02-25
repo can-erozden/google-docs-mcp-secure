@@ -139,18 +139,13 @@ export function register(server: FastMCP) {
                   foregroundColor: {},
                   backgroundColor: {},
                 },
-                fields:
-                  'underline,bold,italic,strikethrough,foregroundColor,backgroundColor',
+                fields: 'underline,bold,italic,strikethrough,foregroundColor,backgroundColor',
               },
             },
           ];
 
           try {
-            await GDocsHelpers.executeBatchUpdate(
-              docs,
-              args.documentId,
-              cleanupRequests
-            );
+            await GDocsHelpers.executeBatchUpdate(docs, args.documentId, cleanupRequests);
             log.info(
               `Cleaned surviving paragraph (bullets + text style) at range ${startIndex}-${survivorEnd}`
             );
