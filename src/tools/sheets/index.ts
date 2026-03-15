@@ -20,6 +20,7 @@ import { register as freezeRowsAndColumns } from './freezeRowsAndColumns.js';
 import { register as setColumnWidths } from './setColumnWidths.js';
 import { register as autoResizeColumns } from './autoResizeColumns.js';
 import { register as setDropdownValidation } from './setDropdownValidation.js';
+import { register as addConditionalFormatting } from './addConditionalFormatting.js';
 
 // Tables
 import { register as createTable } from './createTable.js';
@@ -51,6 +52,7 @@ export function registerSheetsTools(server: FastMCP) {
   setColumnWidths(server);
   autoResizeColumns(server);
   setDropdownValidation(server);
+  addConditionalFormatting(server);
 
   // Tables
   createTable(server);
