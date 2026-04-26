@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getDocsClient } from '../../clients.js';
 import { DocumentIdParameter } from '../../types.js';
 import * as GDocsHelpers from '../../googleDocsApiHelpers.js';
+import { assertWritable } from '../../approvedFiles.js';
 
 export function register(server: FastMCP) {
   server.addTool({
@@ -17,6 +18,7 @@ export function register(server: FastMCP) {
       newTitle: z.string().min(1).describe('The new title for the tab.'),
     }),
     execute: async (args, { log }) => {
+      await assertWritable(args.documentId);
       const docs = await getDocsClient();
 
       log.info(`Renaming tab ${args.tabId} to "${args.newTitle}" in doc ${args.documentId}`);

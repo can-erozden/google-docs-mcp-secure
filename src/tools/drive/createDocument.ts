@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { drive_v3 } from 'googleapis';
 import { getDriveClient, getDocsClient } from '../../clients.js';
 import { insertMarkdown, formatInsertResult } from '../../markdown-transformer/index.js';
+import { addOwned } from '../../approvedFiles.js';
 
 export function register(server: FastMCP) {
   server.addTool({
@@ -53,6 +54,14 @@ export function register(server: FastMCP) {
         });
 
         const document = response.data;
+
+        if (document.id) {
+          await addOwned({
+            fileId: document.id,
+            name: document.name ?? args.title,
+            mimeType: 'application/vnd.google-apps.document',
+          });
+        }
 
         // Add initial content if provided
         if (args.initialContent) {

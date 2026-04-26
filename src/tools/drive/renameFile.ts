@@ -2,6 +2,7 @@ import type { FastMCP } from 'fastmcp';
 import { UserError } from 'fastmcp';
 import { z } from 'zod';
 import { getDriveClient } from '../../clients.js';
+import { assertWritable } from '../../approvedFiles.js';
 
 export function register(server: FastMCP) {
   server.addTool({
@@ -14,6 +15,7 @@ export function register(server: FastMCP) {
       newName: z.string().min(1).describe('New name for the file or folder.'),
     }),
     execute: async (args, { log }) => {
+      await assertWritable(args.fileId);
       const drive = await getDriveClient();
       log.info(`Renaming file ${args.fileId} to "${args.newName}"`);
 

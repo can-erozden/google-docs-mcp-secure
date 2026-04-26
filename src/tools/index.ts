@@ -6,6 +6,7 @@ import { registerSheetsTools } from './sheets/index.js';
 import { registerUtilsTools } from './utils/index.js';
 import { registerGmailTools } from './gmail/index.js';
 import { registerCalendarTools } from './calendar/index.js';
+import { registerAccessTools } from './access/index.js';
 
 export function registerAllTools(server: FastMCP) {
   registerDocsTools(server);
@@ -14,4 +15,5 @@ export function registerAllTools(server: FastMCP) {
   registerUtilsTools(server);
   registerGmailTools(server);
   registerCalendarTools(server);
+  registerAccessTools(server);
 }

@@ -3,6 +3,7 @@ import { UserError } from 'fastmcp';
 import { z } from 'zod';
 import { drive_v3 } from 'googleapis';
 import { getDriveClient } from '../../clients.js';
+import { addOwned } from '../../approvedFiles.js';
 
 export function register(server: FastMCP) {
   server.addTool({
@@ -49,11 +50,18 @@ export function register(server: FastMCP) {
         const response = await drive.files.copy({
           fileId: args.fileId,
           requestBody: copyMetadata,
-          fields: 'id,name,webViewLink',
+          fields: 'id,name,mimeType,webViewLink',
           supportsAllDrives: true,
         });
 
         const copiedFile = response.data;
+        if (copiedFile.id) {
+          await addOwned({
+            fileId: copiedFile.id,
+            name: copiedFile.name ?? copyMetadata.name ?? 'unnamed',
+            mimeType: copiedFile.mimeType ?? 'application/octet-stream',
+          });
+        }
         return JSON.stringify(
           {
             id: copiedFile.id,

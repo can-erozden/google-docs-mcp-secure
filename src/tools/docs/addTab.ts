@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getDocsClient } from '../../clients.js';
 import { DocumentIdParameter } from '../../types.js';
 import * as GDocsHelpers from '../../googleDocsApiHelpers.js';
+import { assertWritable } from '../../approvedFiles.js';
 
 export function register(server: FastMCP) {
   server.addTool({
@@ -37,6 +38,7 @@ export function register(server: FastMCP) {
         .describe('An emoji to display as the tab icon (e.g., "📋").'),
     }),
     execute: async (args, { log }) => {
+      await assertWritable(args.documentId);
       const docs = await getDocsClient();
 
       log.info(`Adding new tab to doc ${args.documentId}`);

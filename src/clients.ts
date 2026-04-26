@@ -5,6 +5,97 @@ import { OAuth2Client } from 'google-auth-library';
 import { authorize } from './auth.js';
 import { logger } from './logger.js';
 import { requestClients } from './remoteWrapper.js';
+import { assertReadable, assertOwned } from './approvedFiles.js';
+
+type IdExtractor = (params: any) => string | undefined;
+
+/**
+ * Wraps a client method so that a guard runs before delegating to the original
+ * method. Marks wrapped methods to avoid double-wrapping on re-init paths.
+ */
+function wrapMethod(
+  owner: any,
+  methodName: string,
+  guard: (params: any) => Promise<void>,
+  extractId: IdExtractor
+) {
+  const original = owner[methodName];
+  if (typeof original !== 'function' || original.__accessGuarded) return;
+  const bound = original.bind(owner);
+  const wrapped = async (params: any, ...rest: any[]) => {
+    const id = extractId(params);
+    if (id) await guard(params);
+    return bound(params, ...rest);
+  };
+  (wrapped as any).__accessGuarded = true;
+  owner[methodName] = wrapped;
+}
+
+/**
+ * Wraps the Sheets client so that reads require the spreadsheet to be in the
+ * approved list (readonly or owner), and writes require it to be owned by the
+ * app. Mutates and returns the passed-in client.
+ */
+function wrapSheetsWithAccessGuard(sheets: sheets_v4.Sheets): sheets_v4.Sheets {
+  const extractId: IdExtractor = (p) =>
+    p && typeof p.spreadsheetId === 'string' ? p.spreadsheetId : undefined;
+
+  const readGuard = async (params: any) => {
+    const id = extractId(params);
+    if (id) await assertReadable(id);
+  };
+  const writeGuard = async (params: any) => {
+    const id = extractId(params);
+    if (id) await assertOwned(id);
+  };
+
+  const s: any = sheets.spreadsheets;
+  // Reads
+  wrapMethod(s, 'get', readGuard, extractId);
+  wrapMethod(s, 'getByDataFilter', readGuard, extractId);
+  // Writes: schema changes (add sheet, formatting, tables, charts, grouping, etc.)
+  wrapMethod(s, 'batchUpdate', writeGuard, extractId);
+
+  const v: any = s.values;
+  // Reads
+  wrapMethod(v, 'get', readGuard, extractId);
+  wrapMethod(v, 'batchGet', readGuard, extractId);
+  wrapMethod(v, 'batchGetByDataFilter', readGuard, extractId);
+  // Writes
+  wrapMethod(v, 'update', writeGuard, extractId);
+  wrapMethod(v, 'append', writeGuard, extractId);
+  wrapMethod(v, 'clear', writeGuard, extractId);
+  wrapMethod(v, 'batchUpdate', writeGuard, extractId);
+  wrapMethod(v, 'batchClear', writeGuard, extractId);
+  wrapMethod(v, 'batchUpdateByDataFilter', writeGuard, extractId);
+  wrapMethod(v, 'batchClearByDataFilter', writeGuard, extractId);
+
+  return sheets;
+}
+
+/**
+ * Wraps the Docs client so that reads require the doc to be in the approved
+ * list, and writes require it to be owned by the app.
+ */
+function wrapDocsWithAccessGuard(docs: docs_v1.Docs): docs_v1.Docs {
+  const extractId: IdExtractor = (p) =>
+    p && typeof p.documentId === 'string' ? p.documentId : undefined;
+
+  const readGuard = async (params: any) => {
+    const id = extractId(params);
+    if (id) await assertReadable(id);
+  };
+  const writeGuard = async (params: any) => {
+    const id = extractId(params);
+    if (id) await assertOwned(id);
+  };
+
+  const d: any = docs.documents;
+  wrapMethod(d, 'get', readGuard, extractId);
+  wrapMethod(d, 'batchUpdate', writeGuard, extractId);
+
+  return docs;
+}
 
 const isRemote = process.env.MCP_TRANSPORT === 'httpStream';
 
@@ -33,9 +124,9 @@ export async function initializeGoogleClient() {
       logger.info('Attempting to authorize Google API client...');
       const client = await authorize();
       authClient = client;
-      googleDocs = google.docs({ version: 'v1', auth: authClient });
+      googleDocs = wrapDocsWithAccessGuard(google.docs({ version: 'v1', auth: authClient }));
       googleDrive = google.drive({ version: 'v3', auth: authClient });
-      googleSheets = google.sheets({ version: 'v4', auth: authClient });
+      googleSheets = wrapSheetsWithAccessGuard(google.sheets({ version: 'v4', auth: authClient }));
       googleScript = google.script({ version: 'v1', auth: authClient });
       googleGmail = google.gmail({ version: 'v1', auth: authClient });
       googleCalendar = google.calendar({ version: 'v3', auth: authClient });
@@ -59,7 +150,7 @@ export async function initializeGoogleClient() {
     googleDrive = google.drive({ version: 'v3', auth: authClient });
   }
   if (authClient && !googleSheets) {
-    googleSheets = google.sheets({ version: 'v4', auth: authClient });
+    googleSheets = wrapSheetsWithAccessGuard(google.sheets({ version: 'v4', auth: authClient }));
   }
   if (authClient && !googleScript) {
     googleScript = google.script({ version: 'v1', auth: authClient });

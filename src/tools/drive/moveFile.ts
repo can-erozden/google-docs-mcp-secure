@@ -2,6 +2,7 @@ import type { FastMCP } from 'fastmcp';
 import { UserError } from 'fastmcp';
 import { z } from 'zod';
 import { getDriveClient } from '../../clients.js';
+import { assertWritable } from '../../approvedFiles.js';
 
 export function register(server: FastMCP) {
   server.addTool({
@@ -22,6 +23,7 @@ export function register(server: FastMCP) {
         ),
     }),
     execute: async (args, { log }) => {
+      await assertWritable(args.fileId);
       const drive = await getDriveClient();
       log.info(`Moving file ${args.fileId} to folder ${args.newParentId}`);
 

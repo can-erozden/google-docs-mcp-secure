@@ -2,6 +2,7 @@ import type { FastMCP } from 'fastmcp';
 import { UserError } from 'fastmcp';
 import { z } from 'zod';
 import { getDriveClient } from '../../clients.js';
+import { assertWritable } from '../../approvedFiles.js';
 
 export function register(server: FastMCP) {
   server.addTool({
@@ -19,6 +20,7 @@ export function register(server: FastMCP) {
         .describe('If true, permanently deletes the file instead of moving it to trash.'),
     }),
     execute: async (args, { log }) => {
+      await assertWritable(args.fileId);
       const drive = await getDriveClient();
       log.info(`Deleting file ${args.fileId} ${args.permanent ? '(permanent)' : '(to trash)'}`);
 

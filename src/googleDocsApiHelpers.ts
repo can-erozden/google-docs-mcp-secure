@@ -4,6 +4,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { UserError } from 'fastmcp';
 import { TextStyleArgs, ParagraphStyleArgs, hexToRgbColor, NotImplementedError } from './types.js';
 import { logger } from './logger.js';
+import { assertWritable } from './approvedFiles.js';
 
 type Docs = docs_v1.Docs; // Alias for convenience
 
@@ -20,6 +21,8 @@ export async function executeBatchUpdate(
     // console.warn("executeBatchUpdate called with no requests.");
     return {}; // Nothing to do
   }
+
+  await assertWritable(documentId);
 
   // TODO: Consider splitting large request arrays into multiple batches if needed
   if (requests.length > MAX_BATCH_UPDATE_REQUESTS) {
@@ -109,6 +112,8 @@ export async function executeBatchUpdateWithSplitting(
       totalElapsedMs: 0,
     };
   }
+
+  await assertWritable(documentId);
 
   const MAX_BATCH = MAX_BATCH_UPDATE_REQUESTS;
 

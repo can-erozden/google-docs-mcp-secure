@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { drive_v3 } from 'googleapis';
 import { getDriveClient, getSheetsClient } from '../../clients.js';
 import * as SheetsHelpers from '../../googleSheetsApiHelpers.js';
+import { addOwned } from '../../approvedFiles.js';
 
 export function register(server: FastMCP) {
   server.addTool({
@@ -51,6 +52,12 @@ export function register(server: FastMCP) {
         if (!spreadsheetId) {
           throw new UserError('Failed to create spreadsheet - no ID returned.');
         }
+
+        await addOwned({
+          fileId: spreadsheetId,
+          name: driveResponse.data.name ?? args.title,
+          mimeType: 'application/vnd.google-apps.spreadsheet',
+        });
 
         let initialDataStatus: string | undefined;
 

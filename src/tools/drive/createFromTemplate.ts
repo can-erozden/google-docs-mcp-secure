@@ -3,6 +3,7 @@ import { UserError } from 'fastmcp';
 import { z } from 'zod';
 import { drive_v3, docs_v1 } from 'googleapis';
 import { getDriveClient, getDocsClient } from '../../clients.js';
+import { addOwned } from '../../approvedFiles.js';
 
 export function register(server: FastMCP) {
   server.addTool({
@@ -47,6 +48,13 @@ export function register(server: FastMCP) {
         });
 
         const document = response.data;
+        if (document.id) {
+          await addOwned({
+            fileId: document.id,
+            name: document.name ?? args.newTitle,
+            mimeType: 'application/vnd.google-apps.document',
+          });
+        }
         let result = `Successfully created document "${document.name}" from template (ID: ${document.id})\nView Link: ${document.webViewLink}`;
 
         // Apply text replacements if provided
